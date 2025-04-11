@@ -209,6 +209,16 @@ Multipart form data с полями `files[]`.
 - Sharp для обработки изображений
 - FFmpeg для анализа и валидации видео
 
+## Переменное окружение
+
+MINIO_ENDPOINT=
+MINIO_PORT=
+MINIO_USE_SSL=false
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
+MINIO_BUCKET=media
+MINIO_REGION=us-east-1
+
 ## Установка и запуск
 
 ```bash
