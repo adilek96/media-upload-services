@@ -1,98 +1,245 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Документация по API сервиса загрузки медиафайлов
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Введение
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Сервис загрузки медиафайлов предоставляет API для загрузки изображений и видео с проверкой форматов и оптимизацией. Сервис использует хранилище MinIO для размещения файлов и поддерживает как одиночную, так и пакетную загрузку файлов.
 
-## Description
+## Базовая информация
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Базовый URL**: `/media`
+- **Версия API**: 1.0.0
 
-## Project setup
+## Поддерживаемые форматы файлов
 
-```bash
-$ npm install
+### Изображения
+
+- JPEG (`image/jpeg`)
+- PNG (`image/png`)
+
+### Видео
+
+- MP4 (`video/mp4`)
+- MOV (`video/quicktime`)
+
+## Ограничения на файлы
+
+### Изображения
+
+- **Максимальный размер**: 30 МБ
+- **Минимальное разрешение**: 320×320 пикселей
+- **Максимальное разрешение**: 4096×4096 пикселей
+
+### Видео
+
+- **Максимальный размер**: 650 МБ
+- **Минимальное разрешение**: 320×320 пикселей
+- **Максимальное разрешение**: 1920×1080 пикселей
+- **Максимальная продолжительность**: 60 секунд
+- **Поддерживаемое соотношение сторон**: от 4:5 до 16:9
+
+## Эндпоинты
+
+### 1. Загрузка одиночного файла
+
+```
+POST /media/upload
 ```
 
-## Compile and run the project
+#### Описание
+
+Загружает один файл (изображение или видео) на сервер.
+
+#### Параметры запроса
+
+- `file` - медиафайл для загрузки (обязательный параметр)
+
+#### Формат запроса
+
+Multipart form data с полем `file`.
+
+#### Коды ответов
+
+- **200 OK** - Файл успешно загружен
+- **400 Bad Request** - Ошибка в запросе (неверный формат, превышен размер и т.д.)
+- **500 Internal Server Error** - Внутренняя ошибка сервера
+
+#### Пример ответа (успешный)
+
+```json
+{
+  "url": "http://localhost:9000/media/images/2a47d85d-6e1a-4b1f-8c38-7b45e815b1ae.jpg",
+  "type": "image",
+  "filename": "2a47d85d-6e1a-4b1f-8c38-7b45e815b1ae.jpg",
+  "size": 524288,
+  "width": 1080,
+  "height": 720
+}
+```
+
+### 2. Загрузка нескольких файлов
+
+```
+POST /media/upload-multiple
+```
+
+#### Описание
+
+Загружает несколько файлов одновременно. Если хотя бы один файл не проходит валидацию, возвращается ошибка.
+
+#### Параметры запроса
+
+- `files` - массив медиафайлов для загрузки (обязательный параметр)
+
+#### Ограничения
+
+- Максимальное количество файлов: 10
+
+#### Формат запроса
+
+Multipart form data с полями `files[]`.
+
+#### Коды ответов
+
+- **200 OK** - Все файлы успешно загружены
+- **400 Bad Request** - Ошибка в запросе
+- **500 Internal Server Error** - Внутренняя ошибка сервера
+
+#### Пример ответа (успешный)
+
+```json
+[
+  {
+    "url": "http://localhost:9000/media/images/2a47d85d-6e1a-4b1f-8c38-7b45e815b1ae.jpg",
+    "type": "image",
+    "filename": "2a47d85d-6e1a-4b1f-8c38-7b45e815b1ae.jpg",
+    "size": 524288,
+    "width": 1080,
+    "height": 720
+  },
+  {
+    "url": "http://localhost:9000/media/videos/3b58e96f-7c2a-5c2f-9d49-8c56e926c2bf.mp4",
+    "type": "video",
+    "filename": "3b58e96f-7c2a-5c2f-9d49-8c56e926c2bf.mp4",
+    "size": 10485760,
+    "width": 1280,
+    "height": 720
+  }
+]
+```
+
+### 3. Пакетная загрузка файлов
+
+```
+POST /media/upload-batch
+```
+
+#### Описание
+
+Загружает несколько файлов в пакетном режиме. Возвращает как успешные загрузки, так и информацию об ошибках для неуспешных.
+
+#### Параметры запроса
+
+- `files` - массив медиафайлов для загрузки (обязательный параметр)
+
+#### Ограничения
+
+- Максимальное количество файлов: 10
+
+#### Формат запроса
+
+Multipart form data с полями `files[]`.
+
+#### Коды ответов
+
+- **200 OK** - Запрос обработан (даже если некоторые файлы не прошли валидацию)
+- **400 Bad Request** - Ошибка в запросе или все файлы не прошли валидацию
+- **500 Internal Server Error** - Внутренняя ошибка сервера
+
+#### Пример ответа (частично успешный)
+
+```json
+{
+  "success": 2,
+  "failed": 1,
+  "files": [
+    {
+      "url": "http://localhost:9000/media/images/2a47d85d-6e1a-4b1f-8c38-7b45e815b1ae.jpg",
+      "type": "image",
+      "filename": "2a47d85d-6e1a-4b1f-8c38-7b45e815b1ae.jpg",
+      "size": 524288,
+      "width": 1080,
+      "height": 720
+    },
+    {
+      "url": "http://localhost:9000/media/videos/3b58e96f-7c2a-5c2f-9d49-8c56e926c2bf.mp4",
+      "type": "video",
+      "filename": "3b58e96f-7c2a-5c2f-9d49-8c56e926c2bf.mp4",
+      "size": 10485760,
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "errors": [
+    {
+      "filename": "invalid_file.txt",
+      "error": "Неподдерживаемый тип файла"
+    }
+  ]
+}
+```
+
+## Обработка медиафайлов
+
+### Изображения
+
+- Изображения больше 1080×1080 автоматически сжимаются до этого размера
+- Качество JPEG устанавливается на 85% для оптимизации размера
+
+### Видео
+
+- Проверяется соотношение сторон (должно быть от 4:5 до 16:9)
+- Проверяется продолжительность (не более 60 секунд)
+
+## Технические детали
+
+Сервис использует:
+
+- NestJS в качестве основного фреймворка
+- MinIO для хранения файлов
+- Sharp для обработки изображений
+- FFmpeg для анализа и валидации видео
+
+## Установка и запуск
 
 ```bash
-# development
-$ npm run start
+# установка зависимостей
+$ npm install
 
-# watch mode
+# запуск в режиме разработки
 $ npm run start:dev
 
-# production mode
+# запуск в production режиме
 $ npm run start:prod
 ```
 
-## Run tests
+## Ошибки
 
-```bash
-# unit tests
-$ npm run test
+При возникновении ошибок API возвращает HTTP-код 400 (Bad Request) и сообщение об ошибке в формате JSON:
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```json
+{
+  "statusCode": 400,
+  "message": "Текст ошибки",
+  "error": "Bad Request"
+}
 ```
 
-## Deployment
+Распространенные сообщения об ошибках:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- "Файл пуст или поврежден"
+- "Неподдерживаемый тип файла"
+- "Невозможно определить тип файла"
+- "Размер изображения/видео превышает максимально допустимый"
+- "Изображение/видео слишком маленькое"
+- "Соотношение сторон видео должно быть от 4:5 до 16:9"
+- "Продолжительность видео превышает максимально допустимую"
